@@ -1,37 +1,38 @@
-import { Request, Response } from 'express';
+import type { Request, Response } from 'express';
+import { loanService } from '../container';
+import { getRouteParam } from '../utils/route-param';
 
 export class LoanController {
-    public static createLoan = (req: Request, res: Response): void => {
-        // TODO: llamar al servicio con req.body y responder 201 con el préstamo creado.
-        res.status(501).json({
-            success: false,
-            message: 'El registro de préstamos todavía no está implementado.'
-        });
-    };
+  static createLoan = (req: Request, res: Response): void => {
+    res.status(201).json({ success: true, data: loanService.create(req.body) });
+  };
 
-    public static getLoansByFilter = (req: Request, res: Response): void => {
-        // TODO: tomar los filtros de req.query, llamar al servicio y responder con los resultados.
-        res.status(501).json({
-            success: false,
-            message: 'La consulta del historial todavía no está implementada.'
-        });
-    };
+  static getLoansByFilter = (req: Request, res: Response): void => {
+    const roomId = typeof req.query.roomId === 'string' ? req.query.roomId : undefined;
+    res.status(200).json({ success: true, data: loanService.list({ roomId }) });
+  };
 
-    public static getLoanById = (req: Request, res: Response): void => {
-        const { id } = req.params;
-        // TODO: pasar id a la operación de consulta y responder con el préstamo encontrado.
-        res.status(501).json({
-            success: false,
-            message: `La consulta del préstamo ${id} todavía no está implementada.`
-        });
-    };
+  static getLoanById = (req: Request, res: Response): void => {
+    const id = getRouteParam(req.params.id, 'id');
+    res.status(200).json({ success: true, data: loanService.getById(id) });
+  };
 
-    public static acceptLoanInventory = (req: Request, res: Response): void => {
-        const { id } = req.params;
-        // TODO: pasar id a la operación de aceptación y responder con el resultado.
-        res.status(501).json({
-            success: false,
-            message: `La aceptación del préstamo ${id} todavía no está implementada.`
-        });
-    };
+  static acceptLoanInventory = (req: Request, res: Response): void => {
+    const id = getRouteParam(req.params.id, 'id');
+    res.status(200).json({ success: true, data: loanService.accept(id) });
+  };
+
+  static returnLoanInventory = (req: Request, res: Response): void => {
+    const id = getRouteParam(req.params.id, 'id');
+    res.status(200).json({ success: true, data: loanService.returnAllEquipment(id) });
+  };
+
+  static returnEquipment = (req: Request, res: Response): void => {
+    const id = getRouteParam(req.params.id, 'id');
+    const equipmentId = getRouteParam(req.params.equipmentId, 'equipmentId');
+    res.status(200).json({
+      success: true,
+      data: loanService.returnEquipment(id, equipmentId)
+    });
+  };
 }

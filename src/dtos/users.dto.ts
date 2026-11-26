@@ -1,6 +1,13 @@
+import type { UserRole } from '../models/entities';
+
 export interface ICreateUserDTO {
-    nombre: string;
-    apellido: string;
-    correo: string;
-    contrasena: string;
+  email: string;
+  nombre: string;
+  rol: UserRole;
+}
+
+export interface IUpdateUserDTO {
+  email?: string;
+  nombre?: string;
+  rol?: UserRole;
 }

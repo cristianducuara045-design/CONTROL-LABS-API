@@ -1,27 +1,31 @@
-import { Request, Response } from 'express';
+import type { Request, Response } from 'express';
+import { equipmentService } from '../container';
+import { getRouteParam } from '../utils/route-param';
 
-export class EquiposController {
-    
-    public static registerambiente = (req: Request, res: Response): void => {
-        res.status(501).json({
-            success: false,
-            message: 'La creacion de equipos todavia no esta implementada'
-        });
-    };
+export class EquipoController {
+  static getAll = (req: Request, res: Response): void => {
+    const roomId = typeof req.query.roomId === 'string' ? req.query.roomId : undefined;
+    const estado = typeof req.query.estado === 'string' ? req.query.estado : undefined;
+    const tipo = typeof req.query.tipo === 'string' ? req.query.tipo : undefined;
+    res.status(200).json({ success: true, data: equipmentService.list({ roomId, estado, tipo }) });
+  };
 
-    public static getequipos = (req: Request, res: Response): void => {
-            res.status(501).json({
-                success: false,
-                message: 'La consulta de equipos todavia no esta implementada'
-            });
-        };
+  static getById = (req: Request, res: Response): void => {
+    const id = getRouteParam(req.params.id, 'id');
+    res.status(200).json({ success: true, data: equipmentService.getById(id) });
+  };
 
-    public static updateequipo = (req: Request, res: Response): void => {
-        const { id } = req.params;
-        res.status(501).json({
-            success: false,
-            message: `La actualizacion de equipos ${id} todavia no esta implementada.`
-        });
-    };
+  static create = (req: Request, res: Response): void => {
+    res.status(201).json({ success: true, data: equipmentService.create(req.body) });
+  };
 
+  static update = (req: Request, res: Response): void => {
+    const id = getRouteParam(req.params.id, 'id');
+    res.status(200).json({ success: true, data: equipmentService.update(id, req.body) });
+  };
+
+  static move = (req: Request, res: Response): void => {
+    const id = getRouteParam(req.params.id, 'id');
+    res.status(200).json({ success: true, data: equipmentService.move(id, req.body.roomId) });
+  };
 }

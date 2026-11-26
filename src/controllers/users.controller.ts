@@ -1,43 +1,35 @@
-import { Request, Response } from 'express';
+import type { Request, Response } from 'express';
+import { userService } from '../container';
+import { getRouteParam } from '../utils/route-param';
 
-export class UsersController {
-    public static getalluser = (req: Request, res: Response): void => {
-        res.status(501).json({
-            success: false,
-            message: 'La consulta de usuarios todavia no esta implementada'
-        });
-    };
+export class UserController {
+  static getAll = (req: Request, res: Response): void => {
+    const rol = typeof req.query.rol === 'string' ? req.query.rol : undefined;
+    const activo = typeof req.query.activo === 'string' ? req.query.activo : undefined;
+    res.status(200).json({ success: true, data: userService.list({ rol, activo }) });
+  };
 
-    public static registeruser = (req: Request, res: Response): void => {
-        res.status(501).json({
-            success: false,
-            message: 'La creacion de usuarios todavia no esta implementada'
-        });
-    };
+  static create = (req: Request, res: Response): void => {
+    res.status(201).json({ success: true, data: userService.create(req.body) });
+  };
 
-    public static getuserbyId = (req: Request, res: Response): void => {
-        const { id } = req.params;
-        res.status(501).json({
-            success: false,
-            message: `La consulta de usuarios por ${id} todavia no esta implementada.`
-        });
-    };
+  static getUserById = (req: Request, res: Response): void => {
+    const id = getRouteParam(req.params.id, 'id');
+    res.status(200).json({ success: true, data: userService.getById(id) });
+  };
 
-    public static updateuser = (req: Request, res: Response): void => {
-        const { id } = req.params;
-        res.status(501).json({
-            success: false,
-            message: `La actualizacion de usuarios ${id} todavia no esta implementada.`
-        });
-    };
+  static update = (req: Request, res: Response): void => {
+    const id = getRouteParam(req.params.id, 'id');
+    res.status(200).json({ success: true, data: userService.update(id, req.body) });
+  };
 
-    public static deleteuser = (req: Request, res: Response): void => {
-        const { id } = req.params;
-        res.status(501).json({
-            success: false,
-            message: `La eliminacion de usuarios ${id} todavia no esta implementada.`
-        });
-    };
+  static setActive = (req: Request, res: Response): void => {
+    const id = getRouteParam(req.params.id, 'id');
+    res.status(200).json({ success: true, data: userService.setActive(id, req.body.activo) });
+  };
 
-
+  static remove = (req: Request, res: Response): void => {
+    const id = getRouteParam(req.params.id, 'id');
+    res.status(200).json({ success: true, data: userService.setActive(id, false) });
+  };
 }

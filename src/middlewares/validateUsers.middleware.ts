@@ -1,37 +1,14 @@
-import { Request, Response, NextFunction } from 'express';
-import { ICreateUserDTO } from '../dtos/users.dto';
+import { isNonEmptyString, isRecord, validateBody } from './validation.middleware';
 
-const isCreateUserDTO = (value: unknown): value is ICreateUserDTO => {
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
-    return false;
-  }
-
-  const user = value as Record<string, unknown>;
-  return (
-    typeof user.nombre === 'string' &&
-    user.nombre.trim() !== '' &&
-    typeof user.apellido === 'string' &&
-    user.apellido.trim() !== '' &&
-    typeof user.correo === 'string' &&
-    typeof user.contrasena === 'string' &&
-    user.contrasena.trim() !== ''
-  );
+const isValidUser = (value: unknown): boolean => {
+  if (!isRecord(value)) return false;
+  return isNonEmptyString(value.nombre) &&
+    typeof value.email === 'string' &&
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.email.trim()) &&
+    ['ADMIN', 'GUARDA', 'INSTRUCTOR'].includes(String(value.rol));
 };
 
-export const validateCreateUserPayload = (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): void => {
-  const body: unknown = req.body;
-
-  if (!isCreateUserDTO(body)) {
-    res.status(400).json({
-      success: false,
-      error: 'Datos del usuario inválidos.'
-    });
-    return;
-  }
-
-  next();
-};
+export const validateUserPayload = validateBody(
+  isValidUser,
+  'Datos de usuario inválidos. Se requieren nombre, email válido y rol permitido.'
+);

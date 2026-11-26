@@ -1,11 +1,13 @@
 import { Router } from 'express';
-import { EquiposController } from '../controllers/equipos.controller';
-import { validateCreateEquipoPayload } from '../middlewares/validateEquipo.middleware';
+import { EquipoController } from '../controllers/equipos.controller';
+import { validateEquipoPayload } from '../middlewares/validateEquipo.middleware';
 
 const router = Router();
 
-router.post('/create', validateCreateEquipoPayload, EquiposController.registerambiente);
-router.get('/list', EquiposController.getequipos );
-router.patch('/:id', EquiposController.updateequipo);
+router.get('/consulta', EquipoController.getAll);
+router.post('/registro', validateEquipoPayload, EquipoController.create);
+router.get('/detalle/:id', EquipoController.getById);
+router.patch('/actualiza/:id', EquipoController.update);
+router.patch('/traslada/:id', EquipoController.move);
 
 export default router;

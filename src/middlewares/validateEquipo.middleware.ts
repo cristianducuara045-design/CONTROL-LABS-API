@@ -1,40 +1,15 @@
-import { Request, Response, NextFunction } from 'express';
-import { ICreateEquipoDTO } from '../dtos/equipos.dto';
+import { isNonEmptyString, isRecord, validateBody } from './validation.middleware';
 
-const isCreateEquipoDTO = (value: unknown): value is ICreateEquipoDTO => {
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
-    return false;
-  }
-
-  const equipo = value as Record<string, unknown>;
-  return (
-    typeof equipo.numeroPC === 'number' &&
-    Number.isInteger(equipo.numeroPC) &&
-    typeof equipo.marca === 'string' &&
-    equipo.marca.trim() !== '' &&
-    typeof equipo.modelo === 'string' &&
-    equipo.modelo.trim() !== '' &&
-    typeof equipo.serial === 'string' &&
-    equipo.serial.trim() !== '' &&
-    typeof equipo.ambiente === 'string' &&
-    equipo.ambiente.trim() !== ''
-  );
+const isValidEquipment = (value: unknown): boolean => {
+  if (!isRecord(value)) return false;
+  return isNonEmptyString(value.placaSena) &&
+    isNonEmptyString(value.codigoActivo) &&
+    isNonEmptyString(value.roomId) &&
+    ['COMPUTADOR', 'MOUSE', 'TECLADO', 'CARGADOR', 'TELEVISOR', 'CONTROL_TV'].includes(String(value.tipo)) &&
+    (value.estado === undefined || ['OPERATIVO', 'MANTENIMIENTO', 'FUERA_DE_SERVICIO'].includes(String(value.estado)));
 };
 
-export const validateCreateEquipoPayload = (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): void => {
-  const body: unknown = req.body;
-
-  if (!isCreateEquipoDTO(body)) {
-    res.status(400).json({
-      success: false,
-      error: 'Datos del equipo inválidos.'
-    });
-    return;
-  }
-
-  next();
-};
+export const validateEquipoPayload = validateBody(
+  isValidEquipment,
+  'Datos de equipo inválidos. Revisa placaSena, codigoActivo, tipo y roomId.'
+);

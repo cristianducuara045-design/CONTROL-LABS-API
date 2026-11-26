@@ -1,7 +1,17 @@
+import type { EquipmentStatus, EquipmentType } from '../models/entities';
+
 export interface ICreateEquipoDTO {
-    numeroPC: number;
-    marca: string;
-    modelo: string;
-    serial: string;
-    ambiente: string;
+  placaSena: string;
+  codigoActivo: string;
+  tipo: EquipmentType;
+  roomId: string;
+  estado?: EquipmentStatus;
+}
+
+export interface IUpdateEquipoDTO {
+  placaSena?: string;
+  codigoActivo?: string;
+  tipo?: EquipmentType;
+  roomId?: string;
+  estado?: EquipmentStatus;
 }

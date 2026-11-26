@@ -1,11 +1,13 @@
 import { Router } from 'express';
-import { AmbientesController } from '../controllers/ambientes.controller';
-import { validateCreateAmbientePayload } from '../middlewares/validateAmbiente.middleware';
+import { AmbienteController } from '../controllers/ambientes.controller';
+import { validateAmbientePayload } from '../middlewares/validateAmbiente.middleware';
 
 const router = Router();
 
-router.get('/list', AmbientesController.getallambientes );
-router.post('/create', validateCreateAmbientePayload, AmbientesController.registerambiente);
-router.patch('/:id', AmbientesController.updateambiente);
+router.get('/consulta', AmbienteController.getAll);
+router.post('/registro', validateAmbientePayload, AmbienteController.create);
+router.get('/detalle/:id', AmbienteController.getById);
+router.patch('/actualiza/:id', AmbienteController.update);
+router.patch('/estado/:id', AmbienteController.setStatus);
 
 export default router;
