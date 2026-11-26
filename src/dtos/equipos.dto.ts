@@ -1,4 +1,12 @@
-import type { EquipmentStatus, EquipmentType } from '../models/entities';
+export type EquipmentType =
+  | "COMPUTADOR"
+  | "MOUSE"
+  | "TECLADO"
+  | "CARGADOR"
+  | "TELEVISOR"
+  | "CONTROL_TV";
+
+export type EquipmentStatus = "OPERATIVO" | "MANTENIMIENTO" | "FUERA_DE_SERVICIO";
 
 export interface ICreateEquipoDTO {
   placaSena: string;

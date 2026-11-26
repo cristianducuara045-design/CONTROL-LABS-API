@@ -1,116 +1,151 @@
-import { DomainError } from '../errors/domain.error';
-import type { ICreateEquipoDTO, IUpdateEquipoDTO } from '../dtos/equipos.dto';
-import type { Equipment, EquipmentStatus, EquipmentType, Room } from '../models/entities';
-import type { EquipmentRepository } from '../repositories/equipment.repository';
-import type { RoomRepository } from '../repositories/room.repository';
+import { DomainError } from "../errors/domain.error.js";
+import type { ICreateEquipoDTO, IUpdateEquipoDTO, EquipmentStatus, EquipmentType } from "../dtos/equipos.dto.js";
+import type { Equipment, EquipmentRepository } from "../repositories/equipment.repository.js";
+import type { RoomRepository } from "../repositories/room.repository.js";
 
-const TYPES: EquipmentType[] = ['COMPUTADOR', 'MOUSE', 'TECLADO', 'CARGADOR', 'TELEVISOR', 'CONTROL_TV'];
-const STATES: EquipmentStatus[] = ['OPERATIVO', 'MANTENIMIENTO', 'FUERA_DE_SERVICIO'];
+const TYPES: EquipmentType[] = [
+  "COMPUTADOR", "MOUSE", "TECLADO", "CARGADOR", "TELEVISOR", "CONTROL_TV"
+];
+const STATUSES: EquipmentStatus[] = ["OPERATIVO", "MANTENIMIENTO", "FUERA_DE_SERVICIO"];
 
 export class EquipmentService {
   constructor(
-    private readonly repository: EquipmentRepository,
+    private readonly equipmentRepository: EquipmentRepository,
     private readonly roomRepository: RoomRepository
   ) {}
 
-  create(input: ICreateEquipoDTO): Equipment {
-    const placaSena = this.text(input.placaSena, 'La placa SENA');
-    const codigoActivo = this.text(input.codigoActivo, 'El código de activo');
-    if (!TYPES.includes(input.tipo)) throw new DomainError('VALIDATION_ERROR', 'El tipo de equipo no es válido.');
-    const estado = input.estado ?? 'OPERATIVO';
-    this.validateState(estado);
-    this.assertUniqueCodes(placaSena, codigoActivo);
-    const room = this.operationalRoom(input.roomId);
-    if (input.tipo === 'COMPUTADOR') this.assertRoomCapacity(room);
-    return this.repository.create({ placaSena, codigoActivo, tipo: input.tipo, roomId: room.id, estado });
-  }
+  async create(input: ICreateEquipoDTO): Promise<Equipment> {
+    const placaSena = this.requiredText(input.placaSena, "La placa SENA");
+    const codigoActivo = this.requiredText(input.codigoActivo, "El código del activo");
+    this.validateType(input.tipo);
+    const estado = input.estado ?? "OPERATIVO";
+    this.validateStatus(estado);
 
-  list(filters: { roomId?: string; estado?: string; tipo?: string } = {}): Equipment[] {
-    if (filters.estado !== undefined && !STATES.includes(filters.estado as EquipmentStatus)) {
-      throw new DomainError('VALIDATION_ERROR', 'El filtro estado no es válido.');
+    const room = await this.roomRepository.findById(input.roomId);
+    if (!room) throw new DomainError("NOT_FOUND", "No existe el ambiente indicado.");
+    if (room.estado !== "OPERATIVO") {
+      throw new DomainError("CONFLICT", "No se pueden registrar equipos en un ambiente no operativo.");
     }
-    if (filters.tipo !== undefined && !TYPES.includes(filters.tipo as EquipmentType)) {
-      throw new DomainError('VALIDATION_ERROR', 'El filtro tipo no es válido.');
+
+    if (await this.equipmentRepository.findByPlaca(placaSena)) {
+      throw new DomainError("CONFLICT", "Ya existe un equipo con esa placa SENA.");
     }
-    return this.repository.findAll({
-      roomId: filters.roomId,
-      estado: filters.estado as EquipmentStatus | undefined,
-      tipo: filters.tipo as EquipmentType | undefined
+    if (await this.equipmentRepository.findByAssetCode(codigoActivo)) {
+      throw new DomainError("CONFLICT", "Ya existe un equipo con ese código de activo.");
+    }
+
+    if (input.tipo === "COMPUTADOR") {
+      const installed = await this.equipmentRepository.countComputersInRoom(room.id);
+      if (installed >= room.capacidadPcs) {
+        throw new DomainError("CONFLICT", "El ambiente alcanzó su capacidad de computadores.");
+      }
+    }
+
+    return this.equipmentRepository.create({
+      placaSena,
+      codigoActivo,
+      tipo: input.tipo,
+      roomId: room.id,
+      estado
     });
   }
 
-  getById(id: string): Equipment {
-    const item = this.repository.findById(id);
-    if (!item) throw new DomainError('NOT_FOUND', 'No existe el equipo solicitado.');
-    return item;
+  async list(filters: { roomId?: string; estado?: string; tipo?: string } = {}): Promise<Equipment[]> {
+    const query: { roomId?: string; estado?: EquipmentStatus; tipo?: EquipmentType } = {};
+    if (filters.roomId !== undefined) {
+      if (!this.isUuid(filters.roomId)) {
+        throw new DomainError("VALIDATION_ERROR", "roomId debe ser un UUID válido.");
+      }
+      query.roomId = filters.roomId.toLowerCase();
+    }
+    if (filters.estado !== undefined) {
+      this.validateStatus(filters.estado);
+      query.estado = filters.estado as EquipmentStatus;
+    }
+    if (filters.tipo !== undefined) {
+      this.validateType(filters.tipo);
+      query.tipo = filters.tipo as EquipmentType;
+    }
+    return this.equipmentRepository.findAll(query);
   }
 
-  update(id: string, input: IUpdateEquipoDTO): Equipment {
-    const current = this.getById(id);
-    const placaSena = input.placaSena === undefined ? current.placaSena : this.text(input.placaSena, 'La placa SENA');
-    const codigoActivo = input.codigoActivo === undefined ? current.codigoActivo : this.text(input.codigoActivo, 'El código de activo');
-    this.assertUniqueCodes(placaSena, codigoActivo, id);
+  async getById(id: string): Promise<Equipment> {
+    const equipment = await this.equipmentRepository.findById(id);
+    if (!equipment) throw new DomainError("NOT_FOUND", "No existe el equipo solicitado.");
+    return equipment;
+  }
 
-    const changes: IUpdateEquipoDTO = { placaSena, codigoActivo };
-    if (input.tipo !== undefined) {
-      if (!TYPES.includes(input.tipo)) throw new DomainError('VALIDATION_ERROR', 'El tipo de equipo no es válido.');
-      changes.tipo = input.tipo;
+  async update(id: string, input: IUpdateEquipoDTO): Promise<Equipment> {
+    const current = await this.getById(id);
+    const changes: IUpdateEquipoDTO = {};
+
+    if (input.placaSena !== undefined) {
+      changes.placaSena = this.requiredText(input.placaSena, "La placa SENA");
+      const existing = await this.equipmentRepository.findByPlaca(changes.placaSena);
+      if (existing && existing.id !== id) {
+        throw new DomainError("CONFLICT", "Ya existe un equipo con esa placa SENA.");
+      }
     }
+    if (input.codigoActivo !== undefined) {
+      changes.codigoActivo = this.requiredText(input.codigoActivo, "El código del activo");
+      const existing = await this.equipmentRepository.findByAssetCode(changes.codigoActivo);
+      if (existing && existing.id !== id) {
+        throw new DomainError("CONFLICT", "Ya existe un equipo con ese código de activo.");
+      }
+    }
+    const nextType = input.tipo ?? current.tipo;
+    if (input.tipo !== undefined) this.validateType(input.tipo);
+    if (input.tipo !== undefined) changes.tipo = input.tipo;
+
     if (input.estado !== undefined) {
-      this.validateState(input.estado);
+      this.validateStatus(input.estado);
       changes.estado = input.estado;
     }
-    if (input.roomId !== undefined) changes.roomId = this.operationalRoom(input.roomId).id;
 
-    const nextRoom = this.roomRepository.findById(changes.roomId ?? current.roomId);
-    const nextType = changes.tipo ?? current.tipo;
-    if (!nextRoom) throw new DomainError('NOT_FOUND', 'El ambiente indicado no existe.');
-    if (nextType === 'COMPUTADOR' &&
-      (nextRoom.id !== current.roomId || current.tipo !== 'COMPUTADOR')) {
-      this.assertRoomCapacity(nextRoom, current.id);
+    if (input.roomId !== undefined && input.roomId !== current.roomId) {
+      const destination = await this.roomRepository.findById(input.roomId);
+      if (!destination) throw new DomainError("NOT_FOUND", "No existe el ambiente de destino.");
+      if (destination.estado !== "OPERATIVO") {
+        throw new DomainError("CONFLICT", "El ambiente de destino no está operativo.");
+      }
+      if (nextType === "COMPUTADOR") {
+        const installed = await this.equipmentRepository.countComputersInRoom(destination.id);
+        if (installed >= destination.capacidadPcs) {
+          throw new DomainError("CONFLICT", "El ambiente de destino alcanzó su capacidad de computadores.");
+        }
+      }
+      changes.roomId = destination.id;
     }
-    return this.repository.update(id, changes) as Equipment;
-  }
 
-  move(id: string, roomId: string): Equipment {
-    return this.update(id, { roomId });
-  }
-
-  private operationalRoom(id: string): Room {
-    const room = this.roomRepository.findById(id);
-    if (!room) throw new DomainError('NOT_FOUND', 'El ambiente indicado no existe.');
-    if (room.estado !== 'OPERATIVO') {
-      throw new DomainError('CONFLICT', 'No se pueden asignar equipos a un ambiente no operativo.');
+    if (Object.keys(changes).length === 0) {
+      throw new DomainError("VALIDATION_ERROR", "No se recibieron campos editables.");
     }
-    return room;
+
+    const updated = await this.equipmentRepository.update(id, changes);
+    if (!updated) throw new DomainError("NOT_FOUND", "No existe el equipo solicitado.");
+    return updated;
   }
 
-  private assertRoomCapacity(room: Room, excludedEquipmentId?: string): void {
-    const installed = this.repository.findAll({ roomId: room.id, tipo: 'COMPUTADOR' })
-      .filter((item) => item.id !== excludedEquipmentId).length;
-    if (installed >= room.capacidadPcs) {
-      throw new DomainError('CONFLICT', 'El ambiente alcanzó su capacidad de computadores.');
+  private validateType(value: string): void {
+    if (!TYPES.includes(value as EquipmentType)) {
+      throw new DomainError("VALIDATION_ERROR", "El tipo de equipo no está permitido.");
     }
   }
 
-  private assertUniqueCodes(placaSena: string, codigoActivo: string, excludedId?: string): void {
-    const items = this.repository.findAll();
-    if (items.some((item) => item.id !== excludedId && item.placaSena.toLowerCase() === placaSena.toLowerCase())) {
-      throw new DomainError('CONFLICT', 'La placa SENA ya está registrada.');
-    }
-    if (items.some((item) => item.id !== excludedId && item.codigoActivo.toLowerCase() === codigoActivo.toLowerCase())) {
-      throw new DomainError('CONFLICT', 'El código de activo ya está registrado.');
+  private validateStatus(value: string): void {
+    if (!STATUSES.includes(value as EquipmentStatus)) {
+      throw new DomainError("VALIDATION_ERROR", "El estado del equipo no está permitido.");
     }
   }
 
-  private text(value: string, label: string): string {
-    if (typeof value !== 'string' || !value.trim()) {
-      throw new DomainError('VALIDATION_ERROR', `${label} es obligatorio.`);
+  private requiredText(value: string, label: string): string {
+    if (typeof value !== "string" || !value.trim()) {
+      throw new DomainError("VALIDATION_ERROR", `${label} es obligatorio.`);
     }
     return value.trim();
   }
 
-  private validateState(state: EquipmentStatus): void {
-    if (!STATES.includes(state)) throw new DomainError('VALIDATION_ERROR', 'El estado del equipo no es válido.');
+  private isUuid(value: string): boolean {
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
   }
 }

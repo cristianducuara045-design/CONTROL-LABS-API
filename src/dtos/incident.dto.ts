@@ -1,13 +1,9 @@
-import type { IncidentPriority, IncidentStatus } from '../models/entities';
+export type IncidentPriority = "BAJA" | "MEDIA" | "ALTA";
+export type IncidentStatus = "PENDIENTE" | "EN_PROCESO" | "RESUELTA";
 
 export interface ICreateIncidentDTO {
   equipmentId: string;
   reportedBy: string;
   descripcion: string;
   prioridad: IncidentPriority;
-}
-
-export interface IUpdateIncidentStatusDTO {
-  estado: IncidentStatus;
-  resolvedBy?: string;
 }

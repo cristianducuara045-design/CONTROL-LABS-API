@@ -1,4 +1,4 @@
-import type { RoomStatus } from '../models/entities';
+export type RoomStatus = "OPERATIVO" | "MANTENIMIENTO" | "INACTIVO";
 
 export interface ICreateAmbienteDTO {
   nombre: string;

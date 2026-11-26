@@ -3,5 +3,4 @@ export interface ICreateLoanDTO {
   instructorId: string;
   guardaId: string;
   numeroPc: number;
-  equipmentIds?: string[];
 }

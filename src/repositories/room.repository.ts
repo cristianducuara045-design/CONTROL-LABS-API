@@ -1,4 +1,22 @@
-import type { Room } from '../models/entities';
-import type { Repository } from './repository';
+import type { ICreateAmbienteDTO, IUpdateAmbienteDTO, RoomStatus } from "../dtos/ambientes.dto.js";
 
-export type RoomRepository = Repository<Room>;
+export interface Room {
+  id: string;
+  nombre: string;
+  bloque: string;
+  capacidadPcs: number;
+  estado: RoomStatus;
+}
+
+export interface RoomFilters {
+  estado?: RoomStatus;
+  bloque?: string;
+}
+
+export interface RoomRepository {
+  create(input: ICreateAmbienteDTO): Promise<Room>;
+  findAll(filters?: RoomFilters): Promise<Room[]>;
+  findById(id: string): Promise<Room | null>;
+  findByName(nombre: string): Promise<Room | null>;
+  update(id: string, changes: IUpdateAmbienteDTO): Promise<Room | null>;
+}
