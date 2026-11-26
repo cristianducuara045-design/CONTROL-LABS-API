@@ -1,4 +1,4 @@
-import type { Entity } from '../models/entities';
+import type { Entity } from '../models/entities.js';
 
 export interface Repository<T extends Entity> {
   create(input: Omit<T, 'id'>): T;

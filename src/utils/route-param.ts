@@ -1,4 +1,4 @@
-import { DomainError } from '../errors/domain.error';
+import { DomainError } from '../errors/domain.error.js';
 
 export const getRouteParam = (value: unknown, name: string): string => {
   let parameter: unknown = value;

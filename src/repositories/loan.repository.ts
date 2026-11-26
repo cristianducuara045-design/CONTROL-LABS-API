@@ -1,16 +1,25 @@
-import type { Loan, LoanStatus, LoanWithEquipment } from '../models/entities';
+import type { ICreateLoanDTO } from "../dtos/loan.dto.js";
+
+export type LoanStatus = "PENDIENTE_APROBACION" | "APROBADO_Y_FIRMADO";
+
+export interface Loan extends ICreateLoanDTO {
+  id: string;
+  estado: LoanStatus;
+  createdAt: string;
+  acceptedAt: string | null;
+}
+
+export interface LoanFilters {
+  roomId?: string;
+}
 
 export interface LoanRepository {
-  createWithEquipment(
-    input: Omit<Loan, 'id' | 'estado' | 'createdAt' | 'acceptedAt'>,
-    equipmentIds: string[]
-  ): LoanWithEquipment;
-  findAllWithEquipment(filters?: { roomId?: string }): LoanWithEquipment[];
-  findById(id: number): Loan | null;
-  findByIdWithEquipment(id: number): LoanWithEquipment | null;
-  updateStatus(id: number, expectedStatus: LoanStatus, status: LoanStatus): LoanWithEquipment | null;
-  getActiveEquipmentIds(): string[];
-  returnEquipment(loanId: number, equipmentId: string): { loanId: number; equipmentId: string; assignedAt: string; returnedAt: string } | null;
-  returnAllEquipment(loanId: number): Array<{ loanId: number; equipmentId: string; assignedAt: string; returnedAt: string }>;
-  getAssignments(loanId: number): Array<{ loanId: number; equipmentId: string; assignedAt: string; returnedAt: string | null }>;
+  create(input: ICreateLoanDTO): Promise<Loan>;
+  findAll(filters?: LoanFilters): Promise<Loan[]>;
+  findById(id: string): Promise<Loan | null>;
+  updateStatus(
+    id: string,
+    expectedStatus: LoanStatus,
+    status: LoanStatus
+  ): Promise<Loan | null>;
 }

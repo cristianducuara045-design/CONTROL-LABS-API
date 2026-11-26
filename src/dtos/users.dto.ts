@@ -1,13 +1,13 @@
-import type { UserRole } from '../models/entities';
+export type UserRole = "ADMIN" | "GUARDA" | "INSTRUCTOR";
 
 export interface ICreateUserDTO {
-  email: string;
   nombre: string;
+  email: string;
   rol: UserRole;
 }
 
 export interface IUpdateUserDTO {
-  email?: string;
   nombre?: string;
+  email?: string;
   rol?: UserRole;
 }

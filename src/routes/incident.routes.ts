@@ -1,12 +1,15 @@
-import { Router } from 'express';
-import { IncidentController } from '../controllers/incident.controller';
-import { validateIncidentPayload } from '../middlewares/validateIncident.middleware';
+import { Router } from "express";
+import { IncidentController } from "../controllers/incident.controller.js";
+import {
+  validateIncidentPayload,
+  validateIncidentStatusPayload
+} from "../middlewares/validateIncident.middleware.js";
 
 const router = Router();
 
-router.get('/', IncidentController.getAll);
-router.post('/', validateIncidentPayload, IncidentController.create);
-router.get('/:id', IncidentController.getById);
-router.patch('/:id/status', IncidentController.updateStatus);
+router.post("/", validateIncidentPayload, IncidentController.create);
+router.get("/", IncidentController.getAll);
+router.get("/:id", IncidentController.getById);
+router.patch("/:id/status", validateIncidentStatusPayload, IncidentController.updateStatus);
 
 export default router;

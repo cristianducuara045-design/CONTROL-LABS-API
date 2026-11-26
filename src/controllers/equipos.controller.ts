@@ -1,31 +1,51 @@
-import type { Request, Response } from 'express';
-import { equipmentService } from '../container';
-import { getRouteParam } from '../utils/route-param';
+import type { Request, Response, NextFunction } from "express";
+import { equipmentService } from "../container.js";
+import { getRouteParam } from "../utils/route-param.js";
 
 export class EquipoController {
-  static getAll = (req: Request, res: Response): void => {
-    const roomId = typeof req.query.roomId === 'string' ? req.query.roomId : undefined;
-    const estado = typeof req.query.estado === 'string' ? req.query.estado : undefined;
-    const tipo = typeof req.query.tipo === 'string' ? req.query.tipo : undefined;
-    res.status(200).json({ success: true, data: equipmentService.list({ roomId, estado, tipo }) });
+  static getAll = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const roomId = typeof req.query.roomId === "string" ? req.query.roomId : undefined;
+      const estado = typeof req.query.estado === "string" ? req.query.estado : undefined;
+      const tipo = typeof req.query.tipo === "string" ? req.query.tipo : undefined;
+      res.status(200).json({ success: true, data: await equipmentService.list({ roomId, estado, tipo }) });
+    } catch (error) {
+      next(error);
+    }
   };
 
-  static getById = (req: Request, res: Response): void => {
-    const id = getRouteParam(req.params.id, 'id');
-    res.status(200).json({ success: true, data: equipmentService.getById(id) });
+  static getById = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const id = getRouteParam(req.params.id, "id");
+      res.status(200).json({ success: true, data: await equipmentService.getById(id) });
+    } catch (error) {
+      next(error);
+    }
   };
 
-  static create = (req: Request, res: Response): void => {
-    res.status(201).json({ success: true, data: equipmentService.create(req.body) });
+  static create = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      res.status(201).json({ success: true, data: await equipmentService.create(req.body) });
+    } catch (error) {
+      next(error);
+    }
   };
 
-  static update = (req: Request, res: Response): void => {
-    const id = getRouteParam(req.params.id, 'id');
-    res.status(200).json({ success: true, data: equipmentService.update(id, req.body) });
+  static update = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const id = getRouteParam(req.params.id, "id");
+      res.status(200).json({ success: true, data: await equipmentService.update(id, req.body) });
+    } catch (error) {
+      next(error);
+    }
   };
 
-  static move = (req: Request, res: Response): void => {
-    const id = getRouteParam(req.params.id, 'id');
-    res.status(200).json({ success: true, data: equipmentService.move(id, req.body.roomId) });
+  static move = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const id = getRouteParam(req.params.id, "id");
+      res.status(200).json({ success: true, data: await equipmentService.update(id, { roomId: req.body.roomId }) });
+    } catch (error) {
+      next(error);
+    }
   };
 }
